@@ -106,16 +106,30 @@ async function vaultPage(scope) {
   const slug = scope || "global";
   const q = `?project=${encodeURIComponent(slug)}&scope=${encodeURIComponent(slug === "global" ? "global" : slug)}`;
   const data = await api("/api/vault" + q);
-  const rows = (data.entries || []).map((e) => `<tr>
-    <td><code>${esc(e.key)}</code></td>
+  const rows = (data.entries || []).map((e) => {
+    const key = esc(e.key);
+    return `<tr data-vault-key="${key}">
+    <td><code>${key}</code></td>
     <td>${esc(e.label || "—")}</td>
     <td class="muted">${esc(e.hint || "")}</td>
     <td><code class="muted">${esc(e.ref)}</code></td>
     <td class="row">
-      <button class="btn quiet" type="button" data-reveal="${esc(e.key)}">Revelar</button>
-      <button class="btn danger" type="button" data-del="${esc(e.key)}">Apagar</button>
+      <button class="btn quiet" type="button" data-reveal="${key}">Revelar</button>
+      <button class="btn danger" type="button" data-del="${key}">Apagar</button>
     </td>
-  </tr>`).join("") || `<tr><td colspan="5" class="muted">Nenhuma credencial neste escopo.</td></tr>`;
+  </tr>
+  <tr class="vault-reveal-row" data-reveal-for="${key}" hidden>
+    <td colspan="5">
+      <div class="vault-reveal-panel">
+        <pre class="vault-reveal-value"></pre>
+        <div class="actions">
+          <button class="btn quiet" type="button" data-copy-reveal="${key}">Copiar</button>
+          <button class="btn quiet" type="button" data-hide-reveal="${key}">Ocultar</button>
+        </div>
+      </div>
+    </td>
+  </tr>`;
+  }).join("") || `<tr><td colspan="5" class="muted">Nenhuma credencial neste escopo.</td></tr>`;
   stage.innerHTML = `<header class="top"><div><h1>Cofre</h1><p>Credenciais criptografadas (AES-GCM). A IA consulta com <code>memory_vault_get</code>; nas memórias use só a referência <code>vault:…</code>.</p></div>
     <div class="actions"><label class="field inline">Escopo<select id="vault-scope">${(await api("/api/scopes")).scopes.map((s) => `<option value="${esc(s.slug)}" ${s.slug === slug ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select></label></div></header>
     <form class="sheet" id="vault-form">
@@ -129,8 +143,7 @@ async function vaultPage(scope) {
       <p class="error" id="vault-err"></p>
     </form>
     <section class="sheet"><h2>Entradas · ${esc(slug)}</h2>
-      <table><thead><tr><th>Chave</th><th>Rótulo</th><th>Dica</th><th>Ref</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-      <pre class="sheet" id="vault-reveal" hidden></pre>
+      <table class="vault-table"><thead><tr><th>Chave</th><th>Rótulo</th><th>Dica</th><th>Ref</th><th></th></tr></thead><tbody>${rows}</tbody></table>
     </section>`;
   stage.querySelector("#vault-scope").onchange = (ev) => {
     history.pushState({}, "", "/cofre?scope=" + encodeURIComponent(ev.target.value));
@@ -149,13 +162,52 @@ async function vaultPage(scope) {
       route();
     } catch (e) { stage.querySelector("#vault-err").textContent = e.message; }
   };
+  const hideReveal = (key) => {
+    const row = stage.querySelector(`tr[data-reveal-for="${CSS.escape(key)}"]`);
+    const btn = stage.querySelector(`button[data-reveal="${CSS.escape(key)}"]`);
+    if (row) {
+      row.hidden = true;
+      const pre = row.querySelector(".vault-reveal-value");
+      if (pre) pre.textContent = "";
+    }
+    if (btn) btn.textContent = "Revelar";
+  };
   stage.querySelectorAll("[data-reveal]").forEach((btn) => btn.onclick = async () => {
-    const box = stage.querySelector("#vault-reveal");
+    const key = btn.dataset.reveal;
+    const row = stage.querySelector(`tr[data-reveal-for="${CSS.escape(key)}"]`);
+    if (!row) return;
+    if (!row.hidden && row.querySelector(".vault-reveal-value")?.textContent) {
+      hideReveal(key);
+      return;
+    }
+    // hide any other open reveal
+    stage.querySelectorAll("tr.vault-reveal-row:not([hidden])").forEach((open) => {
+      hideReveal(open.dataset.revealFor);
+    });
     try {
-      const out = await api("/api/vault/" + encodeURIComponent(btn.dataset.reveal) + q);
-      box.hidden = false;
-      box.textContent = out.value;
+      stage.querySelector("#vault-err").textContent = "";
+      btn.disabled = true;
+      const out = await api("/api/vault/" + encodeURIComponent(key) + q);
+      const pre = row.querySelector(".vault-reveal-value");
+      pre.textContent = out.value || "";
+      row.hidden = false;
+      btn.textContent = "Ocultar";
+      row.scrollIntoView({ block: "nearest", behavior: "smooth" });
     } catch (e) { stage.querySelector("#vault-err").textContent = e.message; }
+    finally { btn.disabled = false; }
+  });
+  stage.querySelectorAll("[data-hide-reveal]").forEach((btn) => btn.onclick = () => hideReveal(btn.dataset.hideReveal));
+  stage.querySelectorAll("[data-copy-reveal]").forEach((btn) => btn.onclick = async () => {
+    const row = stage.querySelector(`tr[data-reveal-for="${CSS.escape(btn.dataset.copyReveal)}"]`);
+    const text = row?.querySelector(".vault-reveal-value")?.textContent || "";
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      btn.textContent = "Copiado";
+      setTimeout(() => { btn.textContent = "Copiar"; }, 1200);
+    } catch (_) {
+      stage.querySelector("#vault-err").textContent = "Não foi possível copiar";
+    }
   });
   stage.querySelectorAll("[data-del]").forEach((btn) => btn.onclick = async () => {
     if (!confirm("Apagar " + btn.dataset.del + " do cofre?")) return;

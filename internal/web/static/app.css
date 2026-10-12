@@ -112,6 +112,25 @@ main { padding: 1.3rem 1.6rem 3rem; min-width: 0; }
 .gate .btn { width: 100%; margin-top: 0.35rem; padding: 0.7rem 1rem; font-size: 0.95rem; }
 .gate .error { margin: 0.55rem 0 0; }
 pre { background: #0c1210; border-radius: 12px; padding: 0.9rem; overflow: auto; }
+.vault-table tr.vault-reveal-row td { padding: 0 0.55rem 0.65rem; border-top: 0; }
+.vault-reveal-panel {
+  display: grid;
+  gap: 0.55rem;
+  background: #0c1210;
+  border: 1px solid rgba(226, 161, 90, 0.35);
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+}
+.vault-reveal-panel .vault-reveal-value {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 0.88rem;
+  color: var(--amber);
+}
+.vault-reveal-panel .actions { margin: 0; }
 table { width: 100%; border-collapse: collapse; }
 td, th { text-align: left; padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--line); }
 .empty { color: var(--muted); padding: 1rem 0; }
