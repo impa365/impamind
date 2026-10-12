@@ -1,0 +1,18 @@
+services:
+  impamind:
+    build: .
+    image: impamind:dev
+    ports:
+      - "30303:30303"
+    environment:
+      IMPAMIND_DATA_DIR: /data
+      IMPAMIND_ADDR: ":30303"
+      IMPAMIND_BOOTSTRAP_TOKEN: ${IMPAMIND_BOOTSTRAP_TOKEN:-impamind-bootstrap-token-local-dev}
+      IMPAMIND_ADMIN_PASSWORD: ${IMPAMIND_ADMIN_PASSWORD:-impamind-admin-local}
+      IMPAMIND_PUBLIC_URL: ${IMPAMIND_PUBLIC_URL:-http://localhost:30303}
+      IMPAMIND_SECRET: ${IMPAMIND_SECRET:-impamind-local-secret}
+    volumes:
+      - impamind_data:/data
+
+volumes:
+  impamind_data:

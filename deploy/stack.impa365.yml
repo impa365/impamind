@@ -1,0 +1,95 @@
+version: "3.8"
+
+# ImpaMind — Swarm + Traefik (padrão Impa365 / ImpaServer)
+# Porta 30303 NÃO é publicada: só Traefik (80/443) fala com o mundo.
+# 1 réplica só — SQLite não aguenta 2 réplicas no mesmo volume.
+#
+# Antes do deploy:
+#   1) Rede overlay ImpaServer já existe e o Traefik está nela
+#   2) DNS: memoria.impa365.cloud → IP da VPS
+#   3) Imagem no Docker Hub (já publicada):
+#        docker pull impa365/impamind:2
+
+services:
+
+## --------------------------- IMPAMIND --------------------------- ##
+
+  impamind:
+    image: impa365/impamind:2
+
+    volumes:
+      - impamind_data:/data
+
+    networks:
+      - ImpaServer
+
+    environment:
+      - IMPAMIND_DATA_DIR=/data
+      - IMPAMIND_ADDR=:30303
+
+      ## URL pública (alinhar com o Host Traefik)
+      - IMPAMIND_PUBLIC_URL=https://memoria.impa365.cloud
+      - IMPAMIND_CORS_ORIGINS=https://memoria.impa365.cloud
+      - IMPAMIND_COOKIE_SECURE=true
+
+      ## Auth / segurança (exposto na internet)
+      ## 👉 Defina no Portainer / env file — NÃO commitar valores reais
+      - IMPAMIND_ADMIN_PASSWORD=${IMPAMIND_ADMIN_PASSWORD}
+      ## 👉 token bootstrap de agente (MCP / Conectar) — ≥ 24 chars
+      - IMPAMIND_BOOTSTRAP_TOKEN=${IMPAMIND_BOOTSTRAP_TOKEN}
+      ## 👉 AES do Cofre + sessões — NÃO troque depois de gravar secrets no vault
+      - IMPAMIND_SECRET=${IMPAMIND_SECRET}
+
+    healthcheck:
+      test: ["CMD", "/impamind", "healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=ImpaServer"
+        - "traefik.http.routers.impamind.rule=Host(`memoria.impa365.cloud`)"
+        - "traefik.http.routers.impamind.entrypoints=websecure"
+        - "traefik.http.routers.impamind.tls.certresolver=letsencryptresolver"
+        - "traefik.http.routers.impamind.service=impamind"
+        - "traefik.http.services.impamind.loadbalancer.server.port=30303"
+        - "traefik.http.services.impamind.loadbalancer.passHostHeader=true"
+        # HTTP → HTTPS
+        - "traefik.http.routers.impamind-http.rule=Host(`memoria.impa365.cloud`)"
+        - "traefik.http.routers.impamind-http.entrypoints=web"
+        - "traefik.http.routers.impamind-http.middlewares=impamind-https-redirect"
+        - "traefik.http.middlewares.impamind-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.middlewares.impamind-https-redirect.redirectscheme.permanent=true"
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 5
+        window: 120s
+      update_config:
+        order: stop-first
+        failure_action: rollback
+
+## --------------------------- VOLUMES --------------------------- ##
+
+volumes:
+  impamind_data:
+    name: impamind_data
+
+## --------------------------- NETWORKS --------------------------- ##
+
+networks:
+  ImpaServer:
+    external: true
+    name: ImpaServer

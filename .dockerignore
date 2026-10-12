@@ -1,0 +1,6 @@
+.git
+_ref
+modcache
+scripts/*.log
+scripts/*.test
+**/*_test.go

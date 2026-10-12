@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101614">
+<title>impamind</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div id="gate"></div>
+<div id="app" hidden>
+  <aside>
+    <div class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      <div>
+        <strong>impamind</strong>
+        <small>memória do trabalho</small>
+      </div>
+    </div>
+    <label class="finder">
+      <input id="finder" type="search" placeholder="Buscar neste projeto" autocomplete="off">
+    </label>
+    <p class="side-label">Projetos</p>
+    <nav id="projects"></nav>
+    <button id="new-project" class="text-btn" type="button">Novo projeto</button>
+    <nav class="tools">
+      <a href="/mapa">Mapa neural</a>
+      <a href="/sessoes">Sessões</a>
+      <a href="/revisao">Revisão</a>
+      <a href="/projeto">Projeto</a>
+      <a href="/admin">Admin</a>
+      <a href="/saude">Saúde</a>
+      <a href="/cofre">Cofre</a>
+      <a href="/tokens">Tokens</a>
+      <a href="/conectar">Conectar</a>
+    </nav>
+    <button id="logout" class="text-btn" type="button">Sair</button>
+  </aside>
+  <main id="stage"></main>
+</div>
+<script src="/constellation.js"></script>
+<script src="/obsidian-graph.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

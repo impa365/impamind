@@ -1,0 +1,25 @@
+/vendor/
+/bin/
+/modcache/
+**/__pycache__/
+*.pyc
+scripts/*.log
+scripts/*.test
+*.db
+*.db-wal
+*.db-shm
+
+.cursor-impa-token
+/tmp/
+*.impamind
+
+# Local / secrets / bulky refs
+.env
+.env.*
+!.env.example
+_ref/
+conversa-*.md
+*.md.bak
+deploy/portainer.env
+deploy/*.secrets.yml
+

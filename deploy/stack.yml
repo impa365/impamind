@@ -1,0 +1,62 @@
+# Swarm stack — Traefik na frente, sem publicar porta na VPS.
+# A porta 30303 fica só na rede overlay; o mundo entra por https://DOMAIN.
+version: "3.8"
+
+services:
+  impamind:
+    image: ${IMAGE:-impamind:1}
+    environment:
+      IMPAMIND_DATA_DIR: /data
+      IMPAMIND_ADDR: ":30303"
+      IMPAMIND_PUBLIC_URL: https://${DOMAIN}
+      IMPAMIND_CORS_ORIGINS: https://${DOMAIN}
+      IMPAMIND_BOOTSTRAP_TOKEN: ${IMPAMIND_BOOTSTRAP_TOKEN}
+      IMPAMIND_ADMIN_PASSWORD: ${IMPAMIND_ADMIN_PASSWORD}
+      IMPAMIND_SECRET: ${IMPAMIND_SECRET}
+      IMPAMIND_COOKIE_SECURE: "true"
+    volumes:
+      - impamind_data:/data
+    networks:
+      - traefik
+    # Sem "ports:" de propósito: nada de IP:30303 na internet.
+    healthcheck:
+      test: ["CMD", "/impamind", "healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        order: stop-first
+        failure_action: rollback
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=${TRAEFIK_NETWORK}
+        # HTTPS
+        - traefik.http.routers.impamind.rule=Host(`${DOMAIN}`)
+        - traefik.http.routers.impamind.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+        - traefik.http.routers.impamind.tls=true
+        - traefik.http.routers.impamind.tls.certresolver=${CERT_RESOLVER}
+        - traefik.http.routers.impamind.service=impamind
+        # HTTP → HTTPS (entrypoint "web" = :80)
+        - traefik.http.routers.impamind-http.rule=Host(`${DOMAIN}`)
+        - traefik.http.routers.impamind-http.entrypoints=${TRAEFIK_HTTP_ENTRYPOINT:-web}
+        - traefik.http.routers.impamind-http.middlewares=impamind-https-redirect
+        - traefik.http.middlewares.impamind-https-redirect.redirectscheme.scheme=https
+        - traefik.http.middlewares.impamind-https-redirect.redirectscheme.permanent=true
+        # Backend interno
+        - traefik.http.services.impamind.loadbalancer.server.port=30303
+        - traefik.http.services.impamind.loadbalancer.passHostHeader=true
+
+volumes:
+  impamind_data:
+
+networks:
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK}
