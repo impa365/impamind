@@ -1,0 +1,12 @@
+---
+description: Protocolo de memória do impamind
+alwaysApply: true
+---
+
+No início de cada tarefa chame memory_recall com a tarefa, os arquivos e o project_hint. Guarde o session_id e reenvie em toda chamada.
+
+Quando aprender algo durável, chame memory_observe. Quando uma decisão for tomada, chame memory_decide com o rationale. Se ela substituir uma decisão vigente, use memory_supersede.
+
+Antes de pausar, chame memory_checkpoint. Ao terminar, chame memory_handoff.
+
+Não grave segredos. Escrita no global nasce como proposta até alguém aprovar na interface do impamind.

@@ -1,0 +1,66 @@
+# ---------------------------------------------------------------------------
+# Build output / Go
+# ---------------------------------------------------------------------------
+/bin/
+/dist/
+/vendor/
+/modcache/
+*.exe
+*.test
+*.out
+coverage.*
+
+# ---------------------------------------------------------------------------
+# Data — never commit databases, backups or clone bundles
+# ---------------------------------------------------------------------------
+/data/
+/backups/
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite
+*.sqlite3
+*.impamind
+
+# ---------------------------------------------------------------------------
+# Secrets and environment
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+**/*.env
+!**/*.env.example
+*.pem
+*.key
+*.p12
+*.token
+.cursor-impa-token
+deploy/*.secrets.yml
+deploy/portainer.env
+
+# Private deployment of the maintainers (domain/network specific)
+deploy/stack.impa365.yml
+
+# ---------------------------------------------------------------------------
+# Private / customer material — must never reach a public repository
+# ---------------------------------------------------------------------------
+/scripts/
+conversa-*.md
+*.md.bak
+/_ref/
+/tmp/
+
+# ---------------------------------------------------------------------------
+# Tooling / OS
+# ---------------------------------------------------------------------------
+**/__pycache__/
+*.pyc
+*.log
+.idea/
+.vscode/
+.cursor/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,87 @@
+# ImpaMind — Docker Swarm / Portainer stack behind Traefik v2/v3.
+#
+# - Port 30303 is NOT published on the host: only Traefik (80/443) talks to
+#   the internet, and reaches ImpaMind through the overlay network.
+# - Exactly ONE replica: SQLite must never be opened by two containers.
+#
+# Portainer: Stacks → Add stack → paste this file → fill the variables from
+# deploy/stack.env.example → Deploy. See deploy/PORTAINER.md.
+
+version: "3.8"
+
+services:
+  impamind:
+    image: ${IMAGE:-impa365/impamind:latest}
+
+    environment:
+      IMPAMIND_DATA_DIR: /data
+      IMPAMIND_ADDR: ":30303"
+      IMPAMIND_PUBLIC_URL: https://${DOMAIN}
+      IMPAMIND_CORS_ORIGINS: https://${DOMAIN}
+      IMPAMIND_COOKIE_SECURE: "true"
+      # Secrets — set them in Portainer, never commit real values
+      IMPAMIND_ADMIN_PASSWORD: ${IMPAMIND_ADMIN_PASSWORD}
+      IMPAMIND_BOOTSTRAP_TOKEN: ${IMPAMIND_BOOTSTRAP_TOKEN}
+      IMPAMIND_SECRET: ${IMPAMIND_SECRET}
+      # Optional semantic search (OpenAI-compatible embeddings)
+      IMPAMIND_RAG: ${IMPAMIND_RAG:-false}
+      IMPAMIND_EMBED_KEY: ${IMPAMIND_EMBED_KEY:-}
+
+    volumes:
+      - impamind_data:/data
+
+    networks:
+      - traefik
+
+    healthcheck:
+      test: ["CMD", "/impamind", "healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      update_config:
+        order: stop-first
+        failure_action: rollback
+      restart_policy:
+        condition: any
+        delay: 10s
+        max_attempts: 5
+        window: 120s
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=${TRAEFIK_NETWORK}
+        # HTTPS
+        - traefik.http.routers.impamind.rule=Host(`${DOMAIN}`)
+        - traefik.http.routers.impamind.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+        - traefik.http.routers.impamind.tls=true
+        - traefik.http.routers.impamind.tls.certresolver=${CERT_RESOLVER}
+        - traefik.http.routers.impamind.service=impamind
+        # HTTP → HTTPS
+        - traefik.http.routers.impamind-http.rule=Host(`${DOMAIN}`)
+        - traefik.http.routers.impamind-http.entrypoints=${TRAEFIK_HTTP_ENTRYPOINT:-web}
+        - traefik.http.routers.impamind-http.middlewares=impamind-https-redirect
+        - traefik.http.middlewares.impamind-https-redirect.redirectscheme.scheme=https
+        - traefik.http.middlewares.impamind-https-redirect.redirectscheme.permanent=true
+        # Internal backend
+        - traefik.http.services.impamind.loadbalancer.server.port=30303
+        - traefik.http.services.impamind.loadbalancer.passHostHeader=true
+
+volumes:
+  impamind_data:
+    name: impamind_data
+
+networks:
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK}

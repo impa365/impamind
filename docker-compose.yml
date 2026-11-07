@@ -1,0 +1,33 @@
+# ImpaMind — local / single-host deployment.
+#
+#   cp .env.example .env     # fill in the secrets
+#   docker compose up -d
+#   open http://localhost:30303
+#
+# Use the image from Docker Hub, or build from source with:
+#   docker compose up -d --build
+
+services:
+  impamind:
+    image: ${IMPAMIND_IMAGE:-impa365/impamind:latest}
+    build: .
+    container_name: impamind
+    restart: unless-stopped
+    ports:
+      - "${IMPAMIND_PORT:-30303}:30303"
+    environment:
+      IMPAMIND_DATA_DIR: /data
+      IMPAMIND_ADDR: ":30303"
+      IMPAMIND_PUBLIC_URL: ${IMPAMIND_PUBLIC_URL:-http://localhost:30303}
+      IMPAMIND_ADMIN_PASSWORD: ${IMPAMIND_ADMIN_PASSWORD:?set IMPAMIND_ADMIN_PASSWORD in .env}
+      IMPAMIND_BOOTSTRAP_TOKEN: ${IMPAMIND_BOOTSTRAP_TOKEN:?set IMPAMIND_BOOTSTRAP_TOKEN in .env}
+      IMPAMIND_SECRET: ${IMPAMIND_SECRET:?set IMPAMIND_SECRET in .env}
+      IMPAMIND_RAG: ${IMPAMIND_RAG:-false}
+      IMPAMIND_EMBED_URL: ${IMPAMIND_EMBED_URL:-https://api.openai.com/v1}
+      IMPAMIND_EMBED_KEY: ${IMPAMIND_EMBED_KEY:-}
+      IMPAMIND_EMBED_MODEL: ${IMPAMIND_EMBED_MODEL:-text-embedding-3-small}
+    volumes:
+      - impamind_data:/data
+
+volumes:
+  impamind_data:

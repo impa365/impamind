@@ -1,0 +1,21 @@
+ImpaMind
+Copyright 2026 Impa365 — https://github.com/impa365
+
+This product was created and is maintained by Impa365.
+Original project: https://github.com/impa365/impamind
+
+Any redistribution, fork or derivative work must keep this NOTICE file
+(or a readable copy of its attribution text) as required by section 4(d)
+of the Apache License, Version 2.0.
+
+-------------------------------------------------------------------------
+Third-party components
+
+This product includes software developed by third parties, each under its
+own license:
+
+- Model Context Protocol Go SDK — github.com/modelcontextprotocol/go-sdk (MIT)
+- modernc.org/sqlite — pure-Go SQLite (BSD-3-Clause)
+- github.com/google/uuid (BSD-3-Clause)
+- golang.org/x/crypto, golang.org/x/oauth2, golang.org/x/sync,
+  golang.org/x/sys, golang.org/x/time (BSD-3-Clause)
